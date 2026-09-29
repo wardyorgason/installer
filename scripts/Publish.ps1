@@ -35,9 +35,11 @@ Get-ChildItem (Join-Path $publishDir 'runtimes') -Directory -ErrorAction Silentl
 Copy-Item (Join-Path $RepoRoot 'LICENSE'), (Join-Path $RepoRoot 'THIRD-PARTY-NOTICES.md') $publishDir
 [xml]$packages = Get-Content (Join-Path $SolutionDir 'Directory.Packages.props')
 $skiaVersion = ($packages.Project.ItemGroup.PackageVersion | Where-Object Include -eq 'SkiaSharp.NativeAssets.Linux.NoDependencies').Version
-$nugetRoot = if ($env:NUGET_PACKAGES) { $env:NUGET_PACKAGES } else { Join-Path $HOME '.nuget/packages' }
+# The package folder the restore actually used (DOTNET_CLI_HOME and NUGET_PACKAGES move it away from ~/.nuget/packages).
+$assets = Get-Content (Join-Path $SolutionDir 'Installer.Dao/obj/project.assets.json') -Raw | ConvertFrom-Json
+$nugetRoot = @($assets.packageFolders.PSObject.Properties.Name)[0]
 $skiaNotices = Join-Path $nugetRoot "skiasharp.nativeassets.linux.nodependencies/$skiaVersion/THIRD-PARTY-NOTICES.txt"
-if (-not (Test-Path $skiaNotices)) { throw "SkiaSharp's notice file was not found at $skiaNotices (restore first)." }
+if (-not (Test-Path $skiaNotices)) { throw "SkiaSharp's notice file was not found at $skiaNotices." }
 Copy-Item $skiaNotices (Join-Path $publishDir 'SkiaSharp-THIRD-PARTY-NOTICES.txt')
 
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
