@@ -1,16 +1,22 @@
 // Release pipeline (run by hand): publishes a zip that the installer-build job already built and archived as a GitHub
 // release. It never rebuilds: it copies that build's artifacts, checks the zip's SHA-256, and creates the release and
 // tag on the commit the zip came from (scripts/Publish-Release.ps1, GitHub REST API, no gh CLI). Setup: docs/ci-jenkins.md.
+
+// Runs a scripts/*.ps1 script through sh. The pwsh step looks pwsh up on the Jenkins process's own PATH, which a
+// launchd-started Jenkins lacks (only /usr/bin:/bin:/usr/sbin:/sbin); sh uses the PATH set in environment below.
+def runScript(String scriptAndArguments) {
+    sh """command -v pwsh > /dev/null || { echo "pwsh not found on PATH (\$PATH). Install it: brew install --cask powershell" >&2; exit 127; }
+pwsh -NoLogo -NoProfile -NonInteractive -File ${scriptAndArguments}"""
+}
+
 pipeline {
     agent { label 'dotnet10 && macos' }
 
     parameters {
-        string(name: 'SOURCE_BRANCH', defaultValue: 'master', trim: true,
-            description: 'Branch of the installer-build job whose artifacts to release.')
         string(name: 'SOURCE_BUILD', defaultValue: '', trim: true,
-            description: 'Build number of that branch to release. Empty: its last successful build.')
+            description: 'installer-build run to release. Empty: its last successful build.')
         booleanParam(name: 'PRERELEASE', defaultValue: false,
-            description: 'Mark the GitHub release as a pre-release (for example when releasing a feature branch).')
+            description: 'Mark the GitHub release as a pre-release.')
         string(name: 'GITHUB_REPOSITORY', defaultValue: 'wardyorgason/installer', trim: true,
             description: 'owner/name of the GitHub repository to publish to.')
     }
@@ -28,22 +34,20 @@ pipeline {
 
     stages {
         stage('Clean') {
-            steps { pwsh 'scripts/Clean.ps1' }
+            steps { runScript 'scripts/Clean.ps1' }
         }
         stage('Fetch artifacts') {
             steps {
                 script {
-                    // Multibranch jobs are named <job>/<branch>, with '/' in branch names encoded.
-                    def project = "installer-build/${params.SOURCE_BRANCH.replace('/', '%2F')}"
                     def selector = params.SOURCE_BUILD ? specific(params.SOURCE_BUILD) : lastSuccessful()
-                    copyArtifacts(projectName: project, selector: selector, filter: 'dist/*', fingerprintArtifacts: true)
+                    copyArtifacts(projectName: 'installer-build', selector: selector, filter: 'dist/*', fingerprintArtifacts: true)
                 }
             }
         }
         stage('Publish release') {
             steps {
                 withCredentials([string(credentialsId: 'github-installer-release', variable: 'GITHUB_TOKEN')]) {
-                    pwsh "scripts/Publish-Release.ps1 -Repository '${params.GITHUB_REPOSITORY}'${params.PRERELEASE ? ' -Prerelease' : ''}"
+                    runScript "scripts/Publish-Release.ps1 -Repository '${params.GITHUB_REPOSITORY}'${params.PRERELEASE ? ' -Prerelease' : ''}"
                 }
             }
         }

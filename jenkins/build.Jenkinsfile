@@ -1,6 +1,14 @@
-// Build pipeline: the versioned builder zip (dist/Installer-<version>.zip), archived on the build page for every branch.
+// Build pipeline (master): the versioned builder zip (dist/Installer-<version>.zip), archived on the build page.
 // jenkins/release.Jenkinsfile publishes a chosen build's zip as a GitHub release, by hand. Tests are
 // jenkins/test.Jenkinsfile. Setup: docs/ci-jenkins.md.
+
+// Runs a scripts/*.ps1 script through sh. The pwsh step looks pwsh up on the Jenkins process's own PATH, which a
+// launchd-started Jenkins lacks (only /usr/bin:/bin:/usr/sbin:/sbin); sh uses the PATH set in environment below.
+def runScript(String scriptAndArguments) {
+    sh """command -v pwsh > /dev/null || { echo "pwsh not found on PATH (\$PATH). Install it: brew install --cask powershell" >&2; exit 127; }
+pwsh -NoLogo -NoProfile -NonInteractive -File ${scriptAndArguments}"""
+}
+
 pipeline {
     agent { label 'dotnet10 && macos' }
 
@@ -23,13 +31,13 @@ pipeline {
 
     stages {
         stage('Clean') {
-            steps { pwsh 'scripts/Clean.ps1' }
+            steps { runScript 'scripts/Clean.ps1' }
         }
         stage('Build') {
-            steps { pwsh 'scripts/Build.ps1 -Configuration Release -BuildNumber $env:BUILD_NUMBER' }
+            steps { runScript 'scripts/Build.ps1 -Configuration Release' }
         }
         stage('Publish') {
-            steps { pwsh 'scripts/Publish.ps1 -Configuration Release -BuildNumber $env:BUILD_NUMBER' }
+            steps { runScript 'scripts/Publish.ps1 -Configuration Release' }
         }
     }
 

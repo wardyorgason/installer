@@ -5,8 +5,8 @@ Three pipelines, all in `jenkins/`, all on the Mac agent (label `dotnet10 && mac
 
 | Pipeline | File | When | What it does | Results |
 |---|---|---|---|---|
-| Test | `jenkins/test.Jenkinsfile` | every branch and PR | Clean → every `UnitTests.*` project, including `Integration` and `EndToEnd` tests | JUnit on the build page, `dist/test-results/**` archived |
-| Build | `jenkins/build.Jenkinsfile` | every branch change | Clean → Build (Release, versioned) → Publish the builder zip | `dist/Installer-<version>.zip` (+ `.sha256`), `dist/release.json`, `dist/version.txt` |
+| Test | `jenkins/test.Jenkinsfile` | every branch and PR | Clean → every `UnitTests.*` project, including `Integration` and `EndToEnd` tests | JUnit on the build page, `dist/test-results/**` archived, commit status on GitHub |
+| Build | `jenkins/build.Jenkinsfile` | every `master` change | Clean → Build (Release, versioned) → Publish the builder zip | `dist/Installer-<version>.zip` (+ `.sha256`), `dist/release.json`, `dist/version.txt` |
 | Release | `jenkins/release.Jenkinsfile` | by hand only | Copies a Build run's artifacts (no rebuild), checks the zip's SHA-256, publishes it as a GitHub release | the release, tagged `v<version>` on the commit the zip was built from |
 
 The Mac agent is the only host that can run every test: macOS packaging needs a Mac, and the same agent runs
@@ -66,28 +66,48 @@ Optional notarization test (the `NOTARIZE` parameter of the test job): set `INST
 ## 5. Jenkins configuration
 
 1. **Plugins:** Git, Pipeline, Credentials Binding (the default set). `pwsh` steps need only `pwsh` on the PATH.
-2. **Label the node** `dotnet10 macos`, and set `INSTALLER_TEST_IDENTITY` (and the optional notarization variables)
-   under the node's environment variables.
+2. **Label the node.** Every Jenkinsfile runs on `agent { label 'dotnet10 && macos' }`. Manage Jenkins › Nodes ›
+   the Mac (for a single-machine setup, **Built-In Node**) › Configure: **Labels** `dotnet10 macos` (space-separated),
+   **Number of executors** at least 1, **Usage** "Use this node as much as possible". Under Node Properties ›
+   Environment variables, set `INSTALLER_TEST_IDENTITY` (and the optional notarization variables). Without the labels,
+   builds wait forever with "‘Jenkins’ doesn’t have label ‘dotnet10&&macos’".
 3. **Credentials** (only for `UNLOCK_KEYCHAIN`): Secret text, ID `mac-login-keychain`, the Jenkins user's login password.
 4. **Plugin for releases:** Manage Jenkins › Plugins › Available › **Copy Artifact** (install, no restart needed). The
    Release job uses it to take the zip from a Build run.
 
 ## 6. Jobs
 
-| Job name | Type | Script path | Branches |
+| Job name | Type | Source | Script path |
 |---|---|---|---|
-| `installer-test` | Multibranch Pipeline | `jenkins/test.Jenkinsfile` | All branches and pull requests |
-| `installer-build` | Multibranch Pipeline | `jenkins/build.Jenkinsfile` | All branches |
-| `installer-release` | Pipeline | `jenkins/release.Jenkinsfile` | `master` (the scripts it runs); no build triggers |
+| `installer-test` | Multibranch Pipeline | **GitHub** branch source: all branches and pull requests | `jenkins/test.Jenkinsfile` |
+| `installer-build` | Pipeline | Pipeline script from SCM, branch `*/master` | `jenkins/build.Jenkinsfile` |
+| `installer-release` | Pipeline | Pipeline script from SCM, branch `*/master`; no build triggers | `jenkins/release.Jenkinsfile` |
 
-The names matter: the Release job copies from `installer-build/<branch>`, and the Build job only lets a job named
-`installer-release` copy its artifacts. Each branch of `installer-build` counts its own build numbers, and that number
-becomes the version suffix (`0.1.0-b12`), so a release is identified by branch and build number.
+The names matter: the Release job copies from `installer-build`, and the Build job only lets a job named
+`installer-release` copy its artifacts. The Build job's build number becomes the version suffix (`0.1.0-b12`).
 
-For `installer-release`: New Item › **Pipeline** › Pipeline › Definition: *Pipeline script from SCM*, Git, the
-repository URL and read credentials, Branch Specifier `*/master`, Script Path `jenkins/release.Jenkinsfile`. Leave
-every build trigger off. Run it once and cancel it so Jenkins loads its parameters; afterwards *Build with Parameters*
-shows them.
+**`installer-test` reports to GitHub.** Use the **GitHub** branch source (GitHub Branch Source plugin, in the default
+set), not the plain Git one: only it discovers pull requests and publishes a commit status (pending, then success or
+failure) for every branch and PR build, shown next to the commit and in the PR's checks. Configure:
+
+- Branch Sources › Add source › **GitHub**; Credentials: a *Username with password* credential whose password is a
+  GitHub token (below); Repository HTTPS URL `https://github.com/wardyorgason/installer`.
+- Behaviours: *Discover branches* (All branches), *Discover pull requests from origin* (The current pull request
+  revision).
+- Scan Multibranch Pipeline Triggers: *Periodically if not otherwise run*, 5 minutes, unless GitHub can reach Jenkins
+  for a webhook (repository Settings › Webhooks › `https://<jenkins>/github-webhook/`, push and pull request events).
+- Optional: GitHub › repository Settings › Branches › add a rule for `master` requiring the status
+  `continuous-integration/jenkins/pr-merge` to pass before merging.
+
+The token for this source is a fine-grained token on the repository with **Contents: Read-only**, **Commit statuses:
+Read and write** and **Pull requests: Read-only** (Metadata is added automatically). Store it as Manage Jenkins ›
+Credentials › Global › Add Credentials › Kind **Username with password**: Username your GitHub user name, Password the
+token, ID `github-installer-ci`. Keep it separate from the release token (section 7), which can write releases.
+
+For `installer-build` and `installer-release`: New Item › **Pipeline** › Definition *Pipeline script from SCM*, Git, the
+repository URL and read credentials, Branch Specifier `*/master`, and the script path above. `installer-build`:
+Build Triggers › *Poll SCM* (for example `H/5 * * * *`) or *GitHub hook trigger*. `installer-release`: no triggers;
+run it once and cancel it so Jenkins loads its parameters; afterwards *Build with Parameters* shows them.
 
 ## 7. GitHub release credential (once)
 
@@ -115,10 +135,10 @@ secret.
 
 ## 8. Releasing
 
-1. Push to the branch and let `installer-build` build it (for a normal release, `master`).
+1. Merge to `master` and let `installer-build` build it.
 2. `installer-release` › **Build with Parameters**:
-   - `SOURCE_BRANCH`: `master`; `SOURCE_BUILD`: the `installer-build` run to release (empty: its last successful run).
-   - `PRERELEASE`: tick it for anything that isn't a normal `master` release.
+   - `SOURCE_BUILD`: the `installer-build` run to release (empty: its last successful run).
+   - `PRERELEASE`: tick it to mark the release as a pre-release.
    - `GITHUB_REPOSITORY`: `owner/name` of the repository.
 3. The run's description links the release. It holds `Installer-<version>.zip` and `Installer-<version>.zip.sha256`.
 
@@ -129,13 +149,20 @@ Locally, the same script works with a token in `GITHUB_TOKEN`:
 
 ## Troubleshooting
 
+- **`pwsh not found on PATH`:** `brew install --cask powershell` as the Jenkins user; the Jenkinsfiles already add
+  `/opt/homebrew/bin` and `/usr/local/bin`. (They run scripts through `sh`, because Jenkins' own `pwsh` step ignores the
+  pipeline's PATH and fails with `Cannot run program "pwsh"` under launchd.)
 - **Signing tests ignored with "INSTALLER_TEST_IDENTITY is not set":** set it on the node (step 5.2).
 - **Build hangs while signing:** codesign is waiting on a keychain dialog; do step 4.2.
 - **`errSecInternalComponent` from codesign:** the keychain is locked; log in, or use `UNLOCK_KEYCHAIN`.
 - **Linux tests ignored with "Docker engine not reachable":** `colima start` as the Jenkins user, then `docker info`.
 - **Windows tests ignored with "makensis was not found":** `brew install makensis`.
-- **Release: `Unable to find project for artifact copy: installer-build/master`:** the Build job has another name, or
-  that branch has no successful build yet.
+- **Builds wait with "‘Jenkins’ doesn’t have label ‘dotnet10&&macos’":** the node has no labels, or no executors;
+  section 5.2.
+- **No commit status on GitHub:** `installer-test` uses the plain Git branch source, or its token lacks Commit
+  statuses: Read and write (section 6).
+- **Release: `Unable to find project for artifact copy: installer-build`:** the Build job has another name, or no
+  successful build yet.
 - **Release: `… is not permitted to copy artifacts`:** the Release job isn't named `installer-release`; rename it or
   change `copyArtifactPermission` in `jenkins/build.Jenkinsfile`.
 - **Release: `401 Bad credentials` / `403 Resource not accessible by personal access token`:** the token expired, or it

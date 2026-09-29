@@ -60,7 +60,7 @@ every target succeeded, 1 means a target failed, 2 means the manifest or argumen
 |---|---|
 | `solution/` | `Installer.sln` and one folder per project: `Installer.Cli` → `Installer.Services` → `Installer.Dao`, shared `Installer.Dtos`, a `UnitTests.*` project for each, and `Samples.DotnetApp` |
 | `scripts/` | PowerShell 7 scripts; the same commands run locally and on Jenkins |
-| `jenkins/` | `test.Jenkinsfile`, `build.Jenkinsfile` (zip on every branch), `release.Jenkinsfile` (manual GitHub release) |
+| `jenkins/` | `test.Jenkinsfile`, `build.Jenkinsfile` (zip for each master build), `release.Jenkinsfile` (manual GitHub release) |
 | `docs/` | Usage, manifest reference, per-platform notes, CI setup |
 | `openspec/` | The OpenSpec change that specifies and designs the builder |
 | `dist/` | Gitignored. Published zip, test results |
@@ -75,5 +75,5 @@ pwsh scripts/Publish.ps1                                # dist/Installer-<versio
 pwsh scripts/Clean.ps1
 ```
 
-Releases: `installer-build` archives the zip for every branch; `installer-release` is run by hand and publishes a chosen
+Releases: `installer-build` archives the zip for each `master` build; `installer-release` is run by hand and publishes a chosen
 build as a GitHub release (`scripts/Publish-Release.ps1`, GitHub REST API). See `docs/ci-jenkins.md`.

@@ -148,7 +148,7 @@ dotnet /opt/installer/Installer.Cli.dll build path/to/installer.json [--output d
 - `--version` prints the app's own version.
 - Command-line parsing uses `System.CommandLine` 2.x.
 
-**Releases.** The `installer-build` Jenkins job archives the zip, a `.sha256` file and `release.json` (version, commit, SHA-256) for every branch. The manual `installer-release` job copies a chosen build's artifacts (Copy Artifact plugin; no rebuild), checks the hash, and publishes a GitHub release through the REST API (`scripts/Publish-Release.ps1`), tagging `v<version>` on the commit the zip came from. The token is a Jenkins secret-text credential (fine-grained, Contents: Read and write). Consumers download a pinned version from the release.
+**Releases.** The `installer-build` Jenkins job archives the zip, a `.sha256` file and `release.json` (version, commit, SHA-256) for each `master` build. The manual `installer-release` job copies a chosen build's artifacts (Copy Artifact plugin; no rebuild), checks the hash, and publishes a GitHub release through the REST API (`scripts/Publish-Release.ps1`), tagging `v<version>` on the commit the zip came from. The token is a Jenkins secret-text credential (fine-grained, Contents: Read and write). Consumers download a pinned version from the release.
 
 *Alternatives:* Nexus hosting (declined), and the `gh` CLI (rejected: another tool to install on the agent when two REST calls do the job).
 

@@ -1,6 +1,14 @@
 // Test pipeline: every UnitTests.* project on the Mac agent, including the Integration tests (real codesign, makensis,
 // Docker) and the EndToEnd tests (the whole app packaging the samples for every platform). Results are JUnit on the
 // build page. Setup: docs/ci-jenkins.md.
+
+// Runs a scripts/*.ps1 script through sh. The pwsh step looks pwsh up on the Jenkins process's own PATH, which a
+// launchd-started Jenkins lacks (only /usr/bin:/bin:/usr/sbin:/sbin); sh uses the PATH set in environment below.
+def runScript(String scriptAndArguments) {
+    sh """command -v pwsh > /dev/null || { echo "pwsh not found on PATH (\$PATH). Install it: brew install --cask powershell" >&2; exit 127; }
+pwsh -NoLogo -NoProfile -NonInteractive -File ${scriptAndArguments}"""
+}
+
 pipeline {
     agent { label 'dotnet10 && macos' }
 
@@ -30,7 +38,7 @@ pipeline {
 
     stages {
         stage('Clean') {
-            steps { pwsh 'scripts/Clean.ps1' }
+            steps { runScript 'scripts/Clean.ps1' }
         }
         stage('Unlock keychain') {
             when { expression { params.UNLOCK_KEYCHAIN } }
@@ -41,7 +49,7 @@ pipeline {
             }
         }
         stage('Tests') {
-            steps { pwsh 'scripts/Test.ps1 -Configuration Release -IncludeIntegration -IncludeEndToEnd' }
+            steps { runScript 'scripts/Test.ps1 -Configuration Release -IncludeIntegration -IncludeEndToEnd' }
         }
     }
 
