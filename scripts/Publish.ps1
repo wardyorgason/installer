@@ -5,7 +5,8 @@
   The zip runs on any macOS or Linux (glibc, x64/arm64) build host with the .NET 10 runtime:
     dotnet <unpacked>/Installer.Cli.dll build installer.json
 .OUTPUTS
-  dist/Installer-<version>.zip, dist/version.txt
+  dist/Installer-<version>.zip, dist/Installer-<version>.zip.sha256 (sha256sum format), dist/version.txt, and
+  dist/release.json (version, commit, asset name and SHA-256), which scripts/Publish-Release.ps1 reads.
 #>
 [CmdletBinding()]
 param(
@@ -32,5 +33,20 @@ Get-ChildItem (Join-Path $publishDir 'runtimes') -Directory -ErrorAction Silentl
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 Compress-Archive -Path (Join-Path $publishDir '*') -DestinationPath $zipPath -CompressionLevel Optimal
 Set-Content -Path (Join-Path $DistDir 'version.txt') -Value $version.Informational -NoNewline
+
+$zipName = Split-Path $zipPath -Leaf
+$sha256 = (Get-FileHash $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
+Set-Content -Path "$zipPath.sha256" -Value "$sha256  $zipName" -NoNewline
+$commit = ''
+try { $commit = (& git -C $RepoRoot rev-parse HEAD 2>$null) } catch { }
+if ($LASTEXITCODE -ne 0 -or -not $commit) { $commit = '' }
+$global:LASTEXITCODE = 0
+[ordered]@{
+    version              = $version.Full
+    informationalVersion = $version.Informational
+    commit               = $commit
+    asset                = $zipName
+    sha256               = $sha256
+} | ConvertTo-Json | Set-Content -Path (Join-Path $DistDir 'release.json')
 $size = [math]::Round((Get-Item $zipPath).Length / 1MB, 1)
 Write-Host "Wrote dist/$(Split-Path $zipPath -Leaf) ($size MB)" -ForegroundColor Green

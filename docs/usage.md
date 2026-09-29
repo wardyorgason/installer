@@ -1,7 +1,8 @@
 # Usage
 
-The builder is a .NET 10 console app, distributed as a zip (`Installer-<version>.zip`, from the `installer-build`
-Jenkins job or `scripts/Publish.ps1`). Unpack it once on the build host and run it with `dotnet`:
+The builder is a .NET 10 console app, distributed as a zip (`Installer-<version>.zip`) attached to each GitHub release
+of this repository (with a `.sha256` file next to it). Download a pinned version, unpack it on the build host and run
+it with `dotnet`:
 
 ```bash
 dotnet /opt/installer/Installer.Cli.dll build installer.json

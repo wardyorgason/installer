@@ -1,6 +1,6 @@
-// Build pipeline: the versioned builder zip (dist/Installer-<version>.zip), archived on the build page. Consumers unpack
-// it on their build host and run `dotnet Installer.Cli.dll build installer.json`. Tests are jenkins/test.Jenkinsfile.
-// Setup: docs/ci-jenkins.md.
+// Build pipeline: the versioned builder zip (dist/Installer-<version>.zip), archived on the build page for every branch.
+// jenkins/release.Jenkinsfile publishes a chosen build's zip as a GitHub release, by hand. Tests are
+// jenkins/test.Jenkinsfile. Setup: docs/ci-jenkins.md.
 pipeline {
     agent { label 'dotnet10 && macos' }
 
@@ -9,6 +9,8 @@ pipeline {
         disableConcurrentBuilds()
         timeout(time: 30, unit: 'MINUTES')
         buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '10'))
+        // The installer-release job copies these artifacts (Copy Artifact plugin).
+        copyArtifactPermission('installer-release')
     }
 
     environment {
@@ -33,7 +35,7 @@ pipeline {
 
     post {
         success {
-            archiveArtifacts artifacts: 'dist/*.zip, dist/version.txt', fingerprint: true
+            archiveArtifacts artifacts: 'dist/*.zip, dist/*.zip.sha256, dist/version.txt, dist/release.json', fingerprint: true
             script {
                 currentBuild.displayName = "#${env.BUILD_NUMBER} ${readFile('dist/version.txt').trim()}"
             }

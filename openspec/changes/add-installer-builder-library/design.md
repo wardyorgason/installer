@@ -148,6 +148,10 @@ dotnet /opt/installer/Installer.Cli.dll build path/to/installer.json [--output d
 - `--version` prints the app's own version.
 - Command-line parsing uses `System.CommandLine` 2.x.
 
+**Releases.** The `installer-build` Jenkins job archives the zip, a `.sha256` file and `release.json` (version, commit, SHA-256) for every branch. The manual `installer-release` job copies a chosen build's artifacts (Copy Artifact plugin; no rebuild), checks the hash, and publishes a GitHub release through the REST API (`scripts/Publish-Release.ps1`), tagging `v<version>` on the commit the zip came from. The token is a Jenkins secret-text credential (fine-grained, Contents: Read and write). Consumers download a pinned version from the release.
+
+*Alternatives:* Nexus hosting (declined), and the `gh` CLI (rejected: another tool to install on the agent when two REST calls do the job).
+
 *Alternative:* an apphost per host RID. Rejected: one portable zip serves macOS and Linux hosts alike, and `dotnet <dll>` is already on the agent's PATH.
 
 ### D3. Manifest shape
@@ -419,4 +423,3 @@ Rollback: until step 4, reverting the Jenkinsfile change restores the old script
 ## Open Questions
 
 - **Published file name.** The published entry point is `Installer.Cli.dll`. Setting a friendlier `AssemblyName` (e.g., `installer`) only changes the invocation line.
-- **Where release zips of the tool live.** A Jenkins artifact or a GitHub release. Either works with D2.
