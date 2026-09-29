@@ -17,6 +17,9 @@ NSIS runs on macOS and Linux, so the Jenkins Mac agent builds Windows installers
 - The setup's version information comes from the manifest: product name, publisher (`CompanyName`), description,
   `version` padded to four parts (file version) and `displayVersion` (product version).
 
+The builder runs `makensis` with `LANG`/`LC_ALL` set to `en_US.UTF-8`: Homebrew's makensis on macOS aborts with
+`std::bad_alloc` when no locale is set, which is how a launchd-started Jenkins runs it.
+
 The app must not be running during an upgrade or uninstall; NSIS shows its usual Retry/Cancel prompt for locked files.
 
 ## Signing (optional)

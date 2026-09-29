@@ -38,7 +38,9 @@ public class NsisDaoTests
         tools.Verify(t => t.RunAsync(
             It.Is<ToolCommand>(c => c.Tool == "makensis"
                 && c.Arguments.SequenceEqual(new[] { "-V2", "-INPUTCHARSET", "UTF8", "/w/installer.nsi" })
-                && c.WorkingDirectory == "/w"),
+                && c.WorkingDirectory == "/w"
+                && c.Environment!["LANG"] == "en_US.UTF-8"
+                && c.Environment["LC_ALL"] == "en_US.UTF-8"),
             It.IsAny<CancellationToken>()));
     }
 }
