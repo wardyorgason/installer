@@ -66,6 +66,12 @@ docker info                       # must succeed as the Jenkins user
 Without a reachable engine, Linux targets fail their preflight check (`docker.unreachable`) and the other targets still
 build.
 
+## Licensing of produced AppImages
+
+Every AppImage embeds the pinned type-2 runtime. The runtime is MIT but statically links musl, libfuse (LGPL-2.1),
+squashfuse, zstd and zlib (https://github.com/AppImage/type2-runtime/blob/main/LICENSE). Those terms cover the runtime
+part of an AppImage you distribute, not your app; this is the same for every AppImage.
+
 ## Checking an AppImage without FUSE
 
 AppImages normally mount themselves with FUSE. To inspect or run one in a container (as the integration tests do):

@@ -12,7 +12,7 @@
     <Company>Installer</Company>
     <Product>Installer</Product>
     <Authors>Ward Yorgason</Authors>
-    <Copyright>Copyright © $([System.DateTime]::UtcNow.Year)</Copyright>
+    <Copyright>Copyright © 2026 Ward Yorgason</Copyright>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <Deterministic>true</Deterministic>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>

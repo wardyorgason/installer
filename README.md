@@ -75,5 +75,12 @@ pwsh scripts/Publish.ps1                                # dist/Installer-<versio
 pwsh scripts/Clean.ps1
 ```
 
+## License
+
+MIT, see `LICENSE`. The release zip includes third-party components (the .NET libraries and SkiaSharp with its native
+Skia, FreeType, libpng and others); their notices are in `THIRD-PARTY-NOTICES.md` and ship with every release.
+AppImages the builder produces embed the AppImage type-2 runtime (MIT, statically linking libfuse under LGPL-2.1); if
+you distribute AppImages, see https://github.com/AppImage/type2-runtime/blob/main/LICENSE.
+
 Releases: `installer-build` archives the zip for each `master` build; `installer-release` is run by hand and publishes a chosen
 build as a GitHub release (`scripts/Publish-Release.ps1`, GitHub REST API). See `docs/ci-jenkins.md`.

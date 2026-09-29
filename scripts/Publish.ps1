@@ -30,6 +30,16 @@ $supportedRuntimes = @('osx', 'linux-x64', 'linux-arm64')
 Get-ChildItem (Join-Path $publishDir 'runtimes') -Directory -ErrorAction SilentlyContinue |
     Where-Object { $_.Name -notin $supportedRuntimes } |
     Remove-Item -Recurse -Force
+# License and third-party notices travel with the binaries (MIT/BSD/FreeType/libpng/DNG terms require it). SkiaSharp's
+# notice file covers its native libraries; it is copied unchanged from the NuGet package that supplied them.
+Copy-Item (Join-Path $RepoRoot 'LICENSE'), (Join-Path $RepoRoot 'THIRD-PARTY-NOTICES.md') $publishDir
+[xml]$packages = Get-Content (Join-Path $SolutionDir 'Directory.Packages.props')
+$skiaVersion = ($packages.Project.ItemGroup.PackageVersion | Where-Object Include -eq 'SkiaSharp.NativeAssets.Linux.NoDependencies').Version
+$nugetRoot = if ($env:NUGET_PACKAGES) { $env:NUGET_PACKAGES } else { Join-Path $HOME '.nuget/packages' }
+$skiaNotices = Join-Path $nugetRoot "skiasharp.nativeassets.linux.nodependencies/$skiaVersion/THIRD-PARTY-NOTICES.txt"
+if (-not (Test-Path $skiaNotices)) { throw "SkiaSharp's notice file was not found at $skiaNotices (restore first)." }
+Copy-Item $skiaNotices (Join-Path $publishDir 'SkiaSharp-THIRD-PARTY-NOTICES.txt')
+
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 Compress-Archive -Path (Join-Path $publishDir '*') -DestinationPath $zipPath -CompressionLevel Optimal
 Set-Content -Path (Join-Path $DistDir 'version.txt') -Value $version.Informational -NoNewline
