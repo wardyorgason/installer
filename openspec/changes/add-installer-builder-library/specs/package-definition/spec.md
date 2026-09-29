@@ -78,9 +78,9 @@ The manifest SHALL contain a non-empty `targets` array. Each target MUST declare
 - **WHEN** `targets` is empty or absent
 - **THEN** validation fails with an error that at least one target is required
 
-#### Scenario: Payload not found
+#### Scenario: Missing payload is not a manifest error
 - **WHEN** a target's `payload` path does not exist, or is a file that is not a `.zip`
-- **THEN** validation fails with an error naming the target and the path
+- **THEN** the manifest still validates, and that target fails its preflight check instead (see build-orchestration), so other targets and runs that don't select it are unaffected
 
 ### Requirement: Platform option sections
 The manifest MAY contain `windows`, `macos` and `linux` option objects at the top level and inside any target. Top-level sections SHALL apply to every target of that OS; a target's section SHALL override them key by key, with nested objects merged the same way and arrays and scalar values replaced. A target MUST NOT contain a section for a different OS than its own.

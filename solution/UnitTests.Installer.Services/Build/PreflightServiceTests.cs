@@ -60,6 +60,22 @@ public class PreflightServiceTests
     }
 
     [Test]
+    public async Task Missing_payload_fails_only_its_target_before_other_checks()
+    {
+        var missing = Target("linux-x64", TargetOs.Linux) with { PayloadKind = null, PayloadPath = "/dist/linux-x64" };
+
+        var results = await _service.CheckAsync([Target("windows-x64", TargetOs.Windows), missing], CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(results.Keys, Is.EqualTo(new[] { "linux-x64" }));
+            Assert.That(results["linux-x64"].Single().Code, Is.EqualTo(ErrorCodes.PayloadNotFound));
+            Assert.That(results["linux-x64"].Single().Message, Does.Contain("linux-x64").And.Contain("/dist/linux-x64"));
+        });
+        _formats[TargetOs.Linux].Verify(f => f.PreflightAsync(It.IsAny<TargetSpec>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Test]
     public async Task Mac_target_on_a_linux_host()
     {
         _environment.Setup(e => e.GetHost()).Returns(new HostInfo(TargetOs.Linux, TargetArch.X64, "/tmp"));

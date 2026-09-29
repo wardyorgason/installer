@@ -221,13 +221,8 @@ internal sealed partial class ManifestValidationService(IVersionService versions
         }
         else
         {
+            // A missing payload is left to preflight, so it fails only its own target, and only when that is selected.
             kind = payloads.Probe(target.Payload);
-            if (kind is null)
-            {
-                problems.Add(Problem.Error(
-                    ErrorCodes.PayloadNotFound,
-                    $"{path}.payload: target '{target.Name}': {target.Payload} is not an existing .zip file or directory."));
-            }
         }
 
         CheckForeignSections(target, os, problems);
@@ -235,12 +230,12 @@ internal sealed partial class ManifestValidationService(IVersionService versions
         var windows = os == TargetOs.Windows ? CheckWindows(target.Windows, path, problems) : null;
         var linux = os == TargetOs.Linux ? CheckLinux(target.Linux, path, problems) : null;
 
-        if (os is null || arch is null || kind is null || target.Name is null)
+        if (os is null || arch is null || target.Payload is null || target.Name is null)
         {
             return null;
         }
 
-        return new TargetSpec(target.Name, os.Value, arch.Value, target.Payload!, kind.Value, mac, windows, linux);
+        return new TargetSpec(target.Name, os.Value, arch.Value, target.Payload, kind, mac, windows, linux);
     }
 
     private static void CheckForeignSections(TargetDocument target, TargetOs? os, ICollection<Problem> problems)

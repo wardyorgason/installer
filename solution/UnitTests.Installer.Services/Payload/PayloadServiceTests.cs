@@ -35,6 +35,14 @@ public class PayloadServiceTests
         _payloads.Setup(p => p.ListZipEntries("/in/p.zip")).Returns(names.Select(n => new ZipEntryInfo(n, n.EndsWith('/'))).ToList());
 
     [Test]
+    public void Missing_payload_fails_the_target()
+    {
+        var ex = Assert.Throws<BuildFailedException>(() => _service.Prepare(Zip() with { PayloadKind = null }, "/w/payload"));
+
+        Assert.That(ex!.Problem.Code, Is.EqualTo(ErrorCodes.PayloadNotFound));
+    }
+
+    [Test]
     public void Zip_with_a_single_top_level_folder()
     {
         ZipEntries("ScreenRec/", "ScreenRec/App.dll", "ScreenRec/wwwroot/", "ScreenRec/wwwroot/index.html");

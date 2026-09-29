@@ -13,6 +13,11 @@ internal sealed class PayloadService(IPayloadDao payloads, IBinaryInspectionServ
     public PreparedPayload Prepare(TargetSpec target, string destination)
     {
         ArgumentNullException.ThrowIfNull(target);
+        if (target.PayloadKind is null)
+        {
+            throw new BuildFailedException(ErrorCodes.PayloadNotFound, $"Target '{target.Name}': payload {target.PayloadPath} is not an existing .zip file or directory.");
+        }
+
         if (target.PayloadKind == PayloadKind.Directory)
         {
             logger.LogInformation("Copying payload {Payload}", target.PayloadPath);

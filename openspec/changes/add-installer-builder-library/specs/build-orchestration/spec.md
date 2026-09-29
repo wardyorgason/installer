@@ -14,7 +14,15 @@ Each target's output format SHALL be determined by its `os`: `windows` produces 
 - **THEN** the builder produces an AppImage for it
 
 ### Requirement: Preflight before building
-Before building any target, the builder SHALL run preflight checks for every selected target: the host OS the format requires, each external tool the format needs (including its minimum version), a reachable Docker engine for Linux targets, and signing identities and credentials the target's options require. A target that fails preflight MUST be marked failed without being built. Other targets SHALL still be built.
+Before building any target, the builder SHALL run preflight checks for every selected target: that its payload exists (a `.zip` file or a directory), the host OS the format requires, each external tool the format needs (including its minimum version), a reachable Docker engine for Linux targets, and signing identities and credentials the target's options require. A target that fails preflight MUST be marked failed without being built. Other targets SHALL still be built.
+
+#### Scenario: Missing payload fails only its target
+- **WHEN** a manifest has a Windows and a Linux target and the Linux target's payload folder does not exist
+- **THEN** the Linux target fails preflight with an error naming the target and the payload path, and the Windows target is built
+
+#### Scenario: Unselected target's payload is not checked
+- **WHEN** only the Windows targets are selected with `--target` and the macOS targets' payloads do not exist
+- **THEN** the Windows targets are built, the macOS targets are reported as not selected, and the run succeeds
 
 #### Scenario: Missing tool fails only its target
 - **WHEN** a manifest has a Windows and a macOS target and `makensis` is not installed

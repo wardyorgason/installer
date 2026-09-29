@@ -25,7 +25,7 @@ Installer.Cli build <manifest> [--output <dir>] [--target <name>]... [--verbose]
 | `-v`, `--verbose` | Include each external tool's command line and output in the log. |
 | `--version` | Print the builder's version and exit. |
 
-Before building anything, the builder checks every selected target: the host OS its format needs, the tools
+Before building anything, the builder checks every selected target: its payload exists, the host OS its format needs, the tools
 (`makensis`, `codesign`, `docker`, …), signing identities and the Docker engine. A target that fails these checks is
 reported as failed without being built; the other targets still build. Targets then build one at a time, in manifest
 order, each in its own temporary work directory, which is deleted when the target succeeds and kept (and reported)

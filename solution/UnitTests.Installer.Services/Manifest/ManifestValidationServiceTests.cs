@@ -128,11 +128,18 @@ public class ManifestValidationServiceTests
         AssertSingleError(Load(m => m.Remove("targets")), ErrorCodes.ManifestMissingField, "at least one target");
 
     [Test]
-    public void Payload_not_found()
+    public void Missing_payload_is_left_to_preflight()
     {
         _fixture.Payloads.Setup(p => p.Probe(Path.GetFullPath("/repo/dist/linux-x64"))).Returns((global::Installer.Dtos.Manifest.PayloadKind?)null);
 
-        AssertSingleError(Load(_ => { }), ErrorCodes.PayloadNotFound, "linux-x64", "$.targets[2]");
+        var result = Load(_ => { });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Problems, Is.Empty);
+            Assert.That(result.Manifest!.Targets[2].PayloadKind, Is.Null);
+            Assert.That(result.Manifest.Targets[0].PayloadKind, Is.EqualTo(global::Installer.Dtos.Manifest.PayloadKind.Directory));
+        });
     }
 
     [TestCase("os", "bsd", "windows, macos or linux")]

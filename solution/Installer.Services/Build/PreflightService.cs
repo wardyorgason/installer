@@ -38,6 +38,11 @@ internal sealed class PreflightService(
 
     private async Task<IReadOnlyList<Problem>> CheckTargetAsync(TargetSpec target, HostInfo host, CancellationToken cancellationToken)
     {
+        if (target.PayloadKind is null)
+        {
+            return [Problem.Error(ErrorCodes.PayloadNotFound, $"Target '{target.Name}': payload {target.PayloadPath} is not an existing .zip file or directory.")];
+        }
+
         var format = formats.Find(target.Os);
         if (format is null)
         {
