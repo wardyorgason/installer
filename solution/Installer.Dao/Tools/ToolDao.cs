@@ -48,7 +48,23 @@ internal sealed class ToolDao(IProcessWrapper process, IFileSystemWrapper fileSy
 
         logger.LogDebug("$ {CommandLine}", FormatCommandLine(command.Tool, command.Arguments));
         var request = new ProcessRequest(fileName, command.Arguments, command.WorkingDirectory, command.StandardInput, command.Environment);
-        var result = await process.RunAsync(request, line => logger.LogDebug("  {Line}", line), cancellationToken).ConfigureAwait(false);
+        using var timeout = command.Timeout is null ? null : CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        if (command.Timeout is { } limit)
+        {
+            timeout!.CancelAfter(limit);
+        }
+
+        ProcessResult result;
+        try
+        {
+            result = await process.RunAsync(request, line => logger.LogDebug("  {Line}", line), timeout?.Token ?? cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (timeout is not null && !cancellationToken.IsCancellationRequested)
+        {
+            throw new BuildFailedException(
+                ErrorCodes.ToolTimeout,
+                $"{command.Tool} did not finish within {command.Timeout!.Value.TotalMinutes:0.#} minutes and was stopped: {FormatCommandLine(command.Tool, command.Arguments)}");
+        }
 
         if (result.ExitCode != 0 && !command.AllowFailure)
         {

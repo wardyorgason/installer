@@ -88,7 +88,7 @@ Every warning and error carries a stable `code`; the message text may change bet
 | `manifest.duplicate-target` | Two targets have the same name. |
 | `cli.unknown-target`, `cli.invalid-arguments` | Bad command-line arguments. |
 | `host.unsupported` | The target needs another host OS (macOS packages need a Mac). |
-| `tool.missing`, `tool.version`, `tool.failed` | An external tool is missing, too old, or failed (its error output is in the message). |
+| `tool.missing`, `tool.version`, `tool.failed`, `tool.timeout` | An external tool is missing, too old, failed (its error output is in the message), or ran past its time limit and was stopped. |
 | `docker.unreachable` | No running Docker engine. |
 | `identity.missing` | The macOS signing identity isn't in the keychain. |
 | `payload.not-found`, `payload.path-escape`, `payload.executable-missing`, `payload.platform-mismatch` | Payload problems: missing, unsafe zip entry, no main executable, or built for another OS/architecture. |

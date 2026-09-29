@@ -1,13 +1,17 @@
 namespace Installer.Dtos.Tools;
 
-/// <summary>An external tool invocation by tool name (resolved on PATH by the tool Dao).</summary>
+/// <summary>
+/// An external tool invocation by tool name (resolved on PATH by the tool Dao). A tool still running after
+/// <see cref="Timeout"/> is killed and fails with <c>tool.timeout</c>.
+/// </summary>
 public sealed record ToolCommand(
     string Tool,
     IReadOnlyList<string> Arguments,
     string? WorkingDirectory = null,
     string? StandardInput = null,
     IReadOnlyDictionary<string, string>? Environment = null,
-    bool AllowFailure = false);
+    bool AllowFailure = false,
+    TimeSpan? Timeout = null);
 
 /// <summary>A process to start, with an absolute <see cref="FileName"/>.</summary>
 public sealed record ProcessRequest(

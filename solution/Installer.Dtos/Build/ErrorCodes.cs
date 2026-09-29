@@ -20,6 +20,7 @@ public static class ErrorCodes
     public const string ToolMissing = "tool.missing";
     public const string ToolVersion = "tool.version";
     public const string ToolFailed = "tool.failed";
+    public const string ToolTimeout = "tool.timeout";
     public const string DockerUnreachable = "docker.unreachable";
     public const string IdentityMissing = "identity.missing";
 

@@ -90,6 +90,7 @@ The keychain must be unlocked while building (a logged-in session, or `security 
 - `identity.missing`: the identity isn't in this user's keychain or isn't trusted for code signing; the message lists
   what is available.
 - `sign.failed` with `errSecInternalComponent`: the keychain is locked.
-- Build hangs while signing: codesign is waiting for a keychain dialog; do setup step 2.
+- `sign.failed` after "codesign did not finish within 5 minutes": codesign was waiting for a keychain access dialog
+  on the Mac's screen. Do setup step 2 once as the build user (or click *Always Allow* in the dialog).
 - `notarize.rejected`: open the log named in the message; usually an unsigned binary or a missing hardened runtime in
   something the payload ships.

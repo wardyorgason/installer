@@ -137,4 +137,21 @@ public class MacDaoTests
             Assert.That(Line(1), Is.EqualTo("xcrun stapler staple /w/App.dmg"));
         });
     }
+
+    [Test]
+    public void Codesign_timeout_explains_the_keychain_dialog()
+    {
+        _tools.Setup(t => t.RunAsync(It.Is<ToolCommand>(c => c.Tool == "codesign"), It.IsAny<CancellationToken>()))
+            .Callback<ToolCommand, CancellationToken>((c, _) => _commands.Add(c))
+            .ThrowsAsync(new BuildFailedException(ErrorCodes.ToolTimeout, "codesign did not finish"));
+
+        var ex = Assert.ThrowsAsync<BuildFailedException>(() => new CodesignDao(_tools.Object).SignAsync("/a", new CodesignSigningOptions("X", true, false), CancellationToken.None));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_commands.Single().Timeout, Is.EqualTo(TimeSpan.FromMinutes(5)));
+            Assert.That(ex!.Problem.Code, Is.EqualTo(ErrorCodes.SignFailed));
+            Assert.That(ex.Message, Does.Contain("keychain access dialog").And.Contain("set-key-partition-list"));
+        });
+    }
 }

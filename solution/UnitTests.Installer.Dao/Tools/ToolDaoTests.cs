@@ -118,4 +118,44 @@ public class ToolDaoTests
             (LogLevel.Debug, "  created: out.dmg"),
         }));
     }
+
+    [Test]
+    public void Tool_still_running_after_its_timeout_is_stopped()
+    {
+        _fileSystem.Setup(f => f.FileExists("/usr/bin/codesign")).Returns(true);
+        _process
+            .Setup(p => p.RunAsync(It.IsAny<ProcessRequest>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()))
+            .Returns(async (ProcessRequest _, Action<string>? _, CancellationToken token) =>
+            {
+                await Task.Delay(Timeout.Infinite, token);
+                return new ProcessResult(0, string.Empty, string.Empty);
+            });
+
+        var ex = Assert.ThrowsAsync<BuildFailedException>(() =>
+            _dao.RunAsync(new ToolCommand("codesign", ["--sign", "X", "a"], Timeout: TimeSpan.FromMilliseconds(100)), CancellationToken.None));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(ex!.Problem.Code, Is.EqualTo(ErrorCodes.ToolTimeout));
+            Assert.That(ex.Message, Does.Contain("codesign").And.Contain("did not finish"));
+        });
+    }
+
+    [Test]
+    public void Outer_cancellation_is_not_reported_as_a_timeout()
+    {
+        _fileSystem.Setup(f => f.FileExists("/usr/bin/codesign")).Returns(true);
+        _process
+            .Setup(p => p.RunAsync(It.IsAny<ProcessRequest>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()))
+            .Returns(async (ProcessRequest _, Action<string>? _, CancellationToken token) =>
+            {
+                await Task.Delay(Timeout.Infinite, token);
+                return new ProcessResult(0, string.Empty, string.Empty);
+            });
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+
+        Assert.That(
+            async () => await _dao.RunAsync(new ToolCommand("codesign", ["a"], Timeout: TimeSpan.FromMinutes(5)), cts.Token),
+            Throws.InstanceOf<OperationCanceledException>());
+    }
 }
