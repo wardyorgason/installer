@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Installer.Dtos/Installer.Dtos.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="SkiaSharp" />
+    <!-- Native Skia for the supported build hosts (macOS, Linux); scripts/Publish.ps1 trims the other Linux RIDs. -->
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
+    <PackageReference Include="SkiaSharp.NativeAssets.macOS" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Linux/appimage.Dockerfile" LogicalName="Installer.Dao.Linux.appimage.Dockerfile" />
+  </ItemGroup>
+</Project>

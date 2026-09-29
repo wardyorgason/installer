@@ -1,0 +1,8 @@
+dist/
+bin/
+obj/
+TestResults/
+.dotnet-home/
+*.user
+.vs/
+.idea/

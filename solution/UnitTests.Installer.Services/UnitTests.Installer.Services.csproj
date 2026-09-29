@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Installer.Services/Installer.Services.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="TestData/**/*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

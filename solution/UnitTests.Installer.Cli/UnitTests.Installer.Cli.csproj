@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Installer.Cli/Installer.Cli.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.IO.Hashing" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="TestData/**/*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

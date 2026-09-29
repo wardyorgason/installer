@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=ScreenRec
+Comment=Screen recorder
+Exec=AppRun
+Icon=dev.screenrec.app
+Categories=AudioVideo;Recorder;
+Terminal=false
+X-AppImage-Version=1.0.0-b12

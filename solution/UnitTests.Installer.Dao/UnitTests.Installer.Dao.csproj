@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Installer.Dao/Installer.Dao.csproj" />
+    <ProjectReference Include="../Installer.Dtos/Installer.Dtos.csproj" />
+  </ItemGroup>
+</Project>
